@@ -1,5 +1,26 @@
+:root {
+  --color-green-forest: #228b22;
+  --color-green-dark-forest: #1f4e2b;
+  --color-brown-saddle: #8b4513;
+
+  --color-bg: var(--color-green-dark-forest);
+  --color-board-bg: var(--color-green-forest);
+  --color-board-border: var(--color-brown-saddle);
+
+  --content-max-width: 900px;
+  --side-padding: calc(max(15px, (100% - var(--content-max-width)) / 2));
+}
+
 * {
   padding: 0;
   margin: 0;
   box-sizing: border-box;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--color-bg);
 }
