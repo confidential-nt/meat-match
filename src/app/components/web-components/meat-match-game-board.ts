@@ -171,7 +171,7 @@ export default class MeatMatchGameBoard extends HTMLElement {
   private addEventListeners() {
     this.$root.querySelectorAll('.block').forEach((blockEl) => {
       blockEl.addEventListener('pointerdown', this.handlePointerDown);
-      blockEl.addEventListener('pointerenter', this.handlePointerEnter);
+      blockEl.addEventListener('pointermove', this.handlePointerMove);
       blockEl.addEventListener('pointerup', this.handlePointerUp);
     });
   }
@@ -179,23 +179,29 @@ export default class MeatMatchGameBoard extends HTMLElement {
   private removeEventListeners() {
     this.$root.querySelectorAll('.block').forEach((blockEl) => {
       blockEl.removeEventListener('pointerdown', this.handlePointerDown);
-      blockEl.removeEventListener('pointerenter', this.handlePointerEnter);
+      blockEl.removeEventListener('pointermove', this.handlePointerMove);
       blockEl.removeEventListener('pointerup', this.handlePointerUp);
     });
   }
 
   private handlePointerDown = (e: Event) => {
     const event = e as PointerEvent;
+
     const target = event.currentTarget as HTMLElement;
+    if (target.hasPointerCapture(event.pointerId)) {
+      target.releasePointerCapture(event.pointerId);
+    }
     this.selectedBlock = {
       row: Number(target.dataset.row),
       col: Number(target.dataset.col),
     };
+
     this.isSwapping = false;
   };
 
-  private handlePointerEnter = (e: Event) => {
+  private handlePointerMove = (e: Event) => {
     const event = e as PointerEvent;
+
     if (!this.selectedBlock || this.isSwapping) return;
 
     const target = event.currentTarget as HTMLElement;
@@ -210,6 +216,7 @@ export default class MeatMatchGameBoard extends HTMLElement {
     if (!isAdjacent) return;
 
     this.isSwapping = true;
+
     this.swapBlocks(from.row, from.col, toRow, toCol);
     this.render();
 
