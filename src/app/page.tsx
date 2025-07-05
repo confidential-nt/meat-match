@@ -8,19 +8,13 @@ export default function Home() {
       <Header />
       <MeatMatchWrapper />
       <section className={styles.instructions}>
-        <h3>🔪 BUTCHER&apos;S INSTRUCTIONS 🔪</h3>
+        <h3>🔪 Guidelines for Sustainable Consumption 🔪</h3>
         <div>
-          <p>• Click a meat piece to select it (it will glow with bloodlust)</p>
+          <p>• Click a meat piece to select it</p>
           <p>• Click an adjacent piece to swap and create matches</p>
-          <p>• Match 3+ identical meats to send them to the slaughterhouse</p>
-          <p>
-            • Each massacre earns you points in this carnivorous capitalism!
-          </p>
-          <p>
-            {
-              '"Remember: No animal was harmed in the making of this game... yet. 😈"'
-            }
-          </p>
+          <p>• Align 3 or more of the same cut to make them... disappear</p>
+          <p>• Each clever arrangement keeps the butcher’s business booming</p>
+          <p>{'All cuts are virtual. The ethics, however, are up to you.'}</p>
         </div>
       </section>
     </div>
