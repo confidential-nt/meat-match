@@ -1,19 +1,11 @@
 export default class MeatMatchGameBoard extends HTMLElement {
   private $root: ShadowRoot;
-
-  private numRows: number = 8;
-  private numCols: number = 8;
-
-  private blockTypes: string[] = [
-    'steak',
-    'chicken',
-    'bacon',
-    'rib',
-    'patty',
-    'sausage',
-  ];
-
+  private numRows = 8;
+  private numCols = 8;
+  private blockTypes = ['steak', 'chicken', 'bacon', 'rib', 'patty', 'sausage'];
   private board: string[][] = [];
+  private selectedBlock: { row: number; col: number } | null = null;
+  private isSwapping = false;
 
   constructor() {
     super();
@@ -23,19 +15,17 @@ export default class MeatMatchGameBoard extends HTMLElement {
   connectedCallback() {
     this.generateInitialBoard();
     this.render();
+    this.addEventListeners();
   }
 
   private generateInitialBoard() {
     this.board = [];
-
     for (let row = 0; row < this.numRows; row++) {
       const rowData: string[] = [];
-
       for (let col = 0; col < this.numCols; col++) {
         const type = this.getValidBlockType(row, col, rowData);
         rowData.push(type);
       }
-
       this.board.push(rowData);
     }
   }
@@ -46,72 +36,50 @@ export default class MeatMatchGameBoard extends HTMLElement {
     rowData: string[]
   ): string {
     const candidates = [...this.blockTypes];
-
-    // 가로 체크
     if (col >= 2 && rowData[col - 1] === rowData[col - 2]) {
-      const invalid = rowData[col - 1];
-      const i = candidates.indexOf(invalid);
-      if (i > -1) candidates.splice(i, 1);
+      candidates.splice(candidates.indexOf(rowData[col - 1]), 1);
     }
-
-    // 세로 체크
     if (row >= 2 && this.board[row - 1][col] === this.board[row - 2][col]) {
-      const invalid = this.board[row - 1][col];
-      const i = candidates.indexOf(invalid);
-      if (i > -1) candidates.splice(i, 1);
+      candidates.splice(candidates.indexOf(this.board[row - 1][col]), 1);
     }
-
     return candidates[Math.floor(Math.random() * candidates.length)];
   }
 
   private render() {
-    const style = ` <style>
+    const style = `
+      <style>
         :host {
           --num-rows: ${this.numRows};
           --num-cols: ${this.numCols};
         }
-
-         * {
-          margin: 0;
-          padding: 0;
+        * {
           box-sizing: border-box;
-
           touch-action: none;
           user-select: none;
           -webkit-user-drag: none;
-          -webkit-user-select: none;
-          -webkit-touch-callout: none;
         }
-
         .board {
           --padding: 5px;
           --border: 8px;
           --board-width: 600px;
-          --board-inner-width: calc(
-            var(--board-width) - var(--border) * 2 - var(--padding) * 2
-          );
-           --meat-size: calc(var(--board-inner-width) / var(--num-cols));
-
-          padding: var(--padding); 
-
-          background-color:var(--color-board-bg);
+          --board-inner-width: calc(var(--board-width) - var(--border) * 2 - var(--padding) * 2);
+          --meat-size: calc(var(--board-inner-width) / var(--num-cols));
+          padding: var(--padding);
+          background-color: var(--color-board-bg);
           border: var(--border) solid var(--color-board-border);
           border-radius: 12px;
-
           display: grid;
           grid-template-rows: repeat(var(--num-rows), var(--meat-size));
           grid-template-columns: repeat(var(--num-cols), var(--meat-size));
-
-          .block {
-            cursor: pointer;
-
-            img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            }
-          }
-
+        }
+        .block {
+          cursor: pointer;
+        }
+        .block img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          pointer-events: none;
         }
       </style>`;
 
@@ -119,18 +87,163 @@ export default class MeatMatchGameBoard extends HTMLElement {
       ${style}
       <div class="board">
         ${this.board
-          .flat()
-          .map(
-            (type) => `
-            <div class="block">
-              <img src="/meat/${type}.png" alt="${type}" draggable="false" />
-            </div>
-          `
+          .map((row, rowIndex) =>
+            row
+              .map(
+                (type, colIndex) => `
+              <div class="block" data-row="${rowIndex}" data-col="${colIndex}">
+                ${
+                  type
+                    ? `<img src="/meat/${type}.png" alt="${type}" draggable="false" />`
+                    : ''
+                }
+              </div>
+            `
+              )
+              .join('')
           )
           .join('')}
       </div>
     `;
 
     this.$root.innerHTML = html;
+    this.removeEventListeners();
+    this.addEventListeners();
+  }
+
+  private addEventListeners() {
+    this.$root.querySelectorAll('.block').forEach((blockEl) => {
+      blockEl.addEventListener('pointerdown', this.handlePointerDown);
+      blockEl.addEventListener('pointerenter', this.handlePointerEnter);
+      blockEl.addEventListener('pointerup', this.handlePointerUp);
+    });
+  }
+
+  private removeEventListeners() {
+    this.$root.querySelectorAll('.block').forEach((blockEl) => {
+      blockEl.removeEventListener('pointerdown', this.handlePointerDown);
+      blockEl.removeEventListener('pointerenter', this.handlePointerEnter);
+      blockEl.removeEventListener('pointerup', this.handlePointerUp);
+    });
+  }
+
+  private handlePointerDown = (e: Event) => {
+    const event = e as PointerEvent;
+    const target = event.currentTarget as HTMLElement;
+    this.selectedBlock = {
+      row: Number(target.dataset.row),
+      col: Number(target.dataset.col),
+    };
+    this.isSwapping = false;
+  };
+
+  private handlePointerEnter = (e: Event) => {
+    const event = e as PointerEvent;
+    if (!this.selectedBlock || this.isSwapping) return;
+
+    const target = event.currentTarget as HTMLElement;
+    const toRow = Number(target.dataset.row);
+    const toCol = Number(target.dataset.col);
+    const from = this.selectedBlock;
+
+    const isAdjacent =
+      (Math.abs(from.row - toRow) === 1 && from.col === toCol) ||
+      (Math.abs(from.col - toCol) === 1 && from.row === toRow);
+
+    if (!isAdjacent) return;
+
+    this.isSwapping = true;
+    this.swapBlocks(from.row, from.col, toRow, toCol);
+    this.render();
+
+    setTimeout(() => {
+      const hasMatch =
+        this.hasMatch(from.row, from.col) || this.hasMatch(toRow, toCol);
+
+      if (!hasMatch) {
+        this.swapBlocks(from.row, from.col, toRow, toCol);
+        this.render();
+      } else {
+        this.clearMatches();
+        this.render();
+      }
+
+      this.selectedBlock = null;
+      this.isSwapping = false;
+    }, 200);
+  };
+
+  private handlePointerUp = () => {
+    this.selectedBlock = null;
+  };
+
+  private swapBlocks(row1: number, col1: number, row2: number, col2: number) {
+    const temp = this.board[row1][col1];
+    this.board[row1][col1] = this.board[row2][col2];
+    this.board[row2][col2] = temp;
+  }
+
+  private hasMatch(row: number, col: number): boolean {
+    const type = this.board[row][col];
+    let count = 1;
+    for (let i = col - 1; i >= 0 && this.board[row][i] === type; i--) count++;
+    for (let i = col + 1; i < this.numCols && this.board[row][i] === type; i++)
+      count++;
+    if (count >= 3) return true;
+
+    count = 1;
+    for (let i = row - 1; i >= 0 && this.board[i][col] === type; i--) count++;
+    for (let i = row + 1; i < this.numRows && this.board[i][col] === type; i++)
+      count++;
+    return count >= 3;
+  }
+
+  private clearMatches() {
+    const matched: boolean[][] = Array.from({ length: this.numRows }, () =>
+      Array(this.numCols).fill(false)
+    );
+
+    // 가로 방향 매치 탐색
+    for (let row = 0; row < this.numRows; row++) {
+      for (let col = 0; col < this.numCols - 2; col++) {
+        const type = this.board[row][col];
+        if (
+          type &&
+          type === this.board[row][col + 1] &&
+          type === this.board[row][col + 2]
+        ) {
+          matched[row][col] =
+            matched[row][col + 1] =
+            matched[row][col + 2] =
+              true;
+        }
+      }
+    }
+
+    // 세로 방향 매치 탐색
+    for (let col = 0; col < this.numCols; col++) {
+      for (let row = 0; row < this.numRows - 2; row++) {
+        const type = this.board[row][col];
+        if (
+          type &&
+          type === this.board[row + 1][col] &&
+          type === this.board[row + 2][col]
+        ) {
+          matched[row][col] =
+            matched[row + 1][col] =
+            matched[row + 2][col] =
+              true;
+        }
+      }
+    }
+
+    // 매치된 블록 제거
+    for (let row = 0; row < this.numRows; row++) {
+      for (let col = 0; col < this.numCols; col++) {
+        if (matched[row][col]) {
+          this.board[row][col] = '';
+        }
+      }
+    }
   }
 }
