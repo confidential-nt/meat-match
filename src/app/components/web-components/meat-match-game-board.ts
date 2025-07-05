@@ -55,6 +55,8 @@ export default class MeatMatchGameBoard extends HTMLElement {
           --num-cols: ${this.numCols};
         }
         * {
+          margin: 0;
+          padding: 0;
           box-sizing: border-box;
           touch-action: none;
           user-select: none;
