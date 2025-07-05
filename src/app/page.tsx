@@ -1,8 +1,20 @@
+'use client';
+
 import MeatMatchWrapper from '@/app/components/MeatMatchGameBoardWrapper';
 import styles from './page.module.css';
 import { Header } from './components/layout/Header/Header';
+import { useMiniKit } from '@coinbase/onchainkit/minikit';
+import { useEffect } from 'react';
 
 export default function Home() {
+  const { setFrameReady, isFrameReady } = useMiniKit();
+
+  useEffect(() => {
+    if (!isFrameReady) {
+      setFrameReady();
+    }
+  }, [setFrameReady, isFrameReady]);
+
   return (
     <div className={styles.page}>
       <Header />
