@@ -156,7 +156,7 @@ export default class MeatMatchGameBoard extends HTMLElement {
     this.swapBlocks(from.row, from.col, toRow, toCol);
     this.render();
 
-    setTimeout(() => {
+    setTimeout(async () => {
       const hasMatch =
         this.hasMatch(from.row, from.col) || this.hasMatch(toRow, toCol);
 
@@ -164,7 +164,7 @@ export default class MeatMatchGameBoard extends HTMLElement {
         this.swapBlocks(from.row, from.col, toRow, toCol);
         this.render();
       } else {
-        this.clearMatches();
+        await this.clearMatches();
         this.render();
       }
 
@@ -198,52 +198,93 @@ export default class MeatMatchGameBoard extends HTMLElement {
     return count >= 3;
   }
 
-  private clearMatches() {
-    const matched: boolean[][] = Array.from({ length: this.numRows }, () =>
-      Array(this.numCols).fill(false)
-    );
+  private async clearMatches() {
+    let hasNewMatch = false;
 
-    // 가로 방향 매치 탐색
-    for (let row = 0; row < this.numRows; row++) {
-      for (let col = 0; col < this.numCols - 2; col++) {
-        const type = this.board[row][col];
-        if (
-          type &&
-          type === this.board[row][col + 1] &&
-          type === this.board[row][col + 2]
-        ) {
-          matched[row][col] =
-            matched[row][col + 1] =
-            matched[row][col + 2] =
-              true;
+    do {
+      const matched: boolean[][] = Array.from({ length: this.numRows }, () =>
+        Array(this.numCols).fill(false)
+      );
+      hasNewMatch = false;
+
+      // 1. 가로 매치 탐색
+      for (let row = 0; row < this.numRows; row++) {
+        for (let col = 0; col < this.numCols - 2; col++) {
+          const type = this.board[row][col];
+          if (
+            type &&
+            type === this.board[row][col + 1] &&
+            type === this.board[row][col + 2]
+          ) {
+            matched[row][col] =
+              matched[row][col + 1] =
+              matched[row][col + 2] =
+                true;
+            hasNewMatch = true;
+          }
         }
       }
-    }
 
-    // 세로 방향 매치 탐색
-    for (let col = 0; col < this.numCols; col++) {
-      for (let row = 0; row < this.numRows - 2; row++) {
-        const type = this.board[row][col];
-        if (
-          type &&
-          type === this.board[row + 1][col] &&
-          type === this.board[row + 2][col]
-        ) {
-          matched[row][col] =
-            matched[row + 1][col] =
-            matched[row + 2][col] =
-              true;
-        }
-      }
-    }
-
-    // 매치된 블록 제거
-    for (let row = 0; row < this.numRows; row++) {
+      // 2. 세로 매치 탐색
       for (let col = 0; col < this.numCols; col++) {
-        if (matched[row][col]) {
-          this.board[row][col] = '';
+        for (let row = 0; row < this.numRows - 2; row++) {
+          const type = this.board[row][col];
+          if (
+            type &&
+            type === this.board[row + 1][col] &&
+            type === this.board[row + 2][col]
+          ) {
+            matched[row][col] =
+              matched[row + 1][col] =
+              matched[row + 2][col] =
+                true;
+            hasNewMatch = true;
+          }
         }
       }
-    }
+
+      if (!hasNewMatch) break;
+
+      // 3. 매치된 블록 제거
+      for (let row = 0; row < this.numRows; row++) {
+        for (let col = 0; col < this.numCols; col++) {
+          if (matched[row][col]) {
+            this.board[row][col] = '';
+          }
+        }
+      }
+
+      this.render();
+      await this.delay(200); // 제거 애니메이션 시간
+
+      // 4. 블록 아래로 떨어뜨리기
+      for (let col = 0; col < this.numCols; col++) {
+        let pointer = this.numRows - 1;
+
+        for (let row = this.numRows - 1; row >= 0; row--) {
+          if (this.board[row][col] !== '') {
+            this.board[pointer][col] = this.board[row][col];
+            if (pointer !== row) this.board[row][col] = '';
+            pointer--;
+          }
+        }
+
+        // 위에 생긴 빈칸은 새 블록으로 채움
+        for (let row = pointer; row >= 0; row--) {
+          this.board[row][col] = this.getRandomType();
+        }
+      }
+
+      this.render();
+      await this.delay(200); // 블록 떨어지는 애니메이션 시간
+    } while (hasNewMatch);
+  }
+
+  private delay(ms: number) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private getRandomType(): string {
+    return this.blockTypes[Math.floor(Math.random() * this.blockTypes.length)];
   }
 }
