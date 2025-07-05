@@ -60,20 +60,37 @@ export default class MeatMatchGameBoard extends HTMLElement {
           user-select: none;
           -webkit-user-drag: none;
         }
+
+        .container {
+          display: grid;
+          grid-template-areas: 'score score score' 'board board board';
+          grid-template-columns: 1fr 1fr 1fr;
+          align-items: center;
+          justify-items: center;
+        }
+
         .board {
           --padding: 16px;
-          --border: 4px;
+          --border: 4px;  
           --board-width: 600px;
           --board-inner-width: calc(var(--board-width) - var(--border) * 2 - var(--padding) * 2);
           --meat-size: calc(var(--board-inner-width) / var(--num-cols));
+
+           @media (max-width: 640px) {
+            --board-width: calc(100vw - 10px); 
+          }
+
           padding: var(--padding);
           background-color: var(--color-board-bg);
           border: var(--border) solid var(--color-board-border);
           border-radius: 12px;
+          
           display: grid;
           grid-template-rows: repeat(var(--num-rows), var(--meat-size));
           grid-template-columns: repeat(var(--num-cols), var(--meat-size));
           gap: 4px;
+
+          grid-area: board;
         }
         .block {
           cursor: pointer;
@@ -88,7 +105,8 @@ export default class MeatMatchGameBoard extends HTMLElement {
         }
 
         .score {
-          width: 20%;
+          grid-area: score;
+
           display: flex;
           align-items: center;
 
@@ -116,28 +134,30 @@ export default class MeatMatchGameBoard extends HTMLElement {
 
     const html = `
       ${style}
-      <div class="score"> 
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart text-red-500"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
-        <span>Score: ${this.score}</span>
-      </div>
-      <div class="board">
-        ${this.board
-          .map((row, rowIndex) =>
-            row
-              .map(
-                (type, colIndex) => `
-              <div class="block" data-row="${rowIndex}" data-col="${colIndex}">
-                ${
-                  type
-                    ? `<img src="/meat/${type}.png" alt="${type}" draggable="false" />`
-                    : ''
-                }
-              </div>
-            `
-              )
-              .join('')
-          )
-          .join('')}
+      <div class="container">
+        <div class="score"> 
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart text-red-500"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+          <span>Score: ${this.score}</span>
+        </div>
+        <div class="board">
+          ${this.board
+            .map((row, rowIndex) =>
+              row
+                .map(
+                  (type, colIndex) => `
+                <div class="block" data-row="${rowIndex}" data-col="${colIndex}">
+                  ${
+                    type
+                      ? `<img src="/meat/${type}.png" alt="${type}" draggable="false" />`
+                      : ''
+                  }
+                </div>
+              `
+                )
+                .join('')
+            )
+            .join('')}
+        </div>
       </div>
     `;
 
