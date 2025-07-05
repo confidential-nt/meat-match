@@ -7,6 +7,8 @@ export default class MeatMatchGameBoard extends HTMLElement {
   private selectedBlock: { row: number; col: number } | null = null;
   private isSwapping = false;
 
+  private score: number = 0;
+
   constructor() {
     super();
     this.$root = this.attachShadow({ mode: 'closed' });
@@ -59,8 +61,8 @@ export default class MeatMatchGameBoard extends HTMLElement {
           -webkit-user-drag: none;
         }
         .board {
-          --padding: 5px;
-          --border: 8px;
+          --padding: 16px;
+          --border: 4px;
           --board-width: 600px;
           --board-inner-width: calc(var(--board-width) - var(--border) * 2 - var(--padding) * 2);
           --meat-size: calc(var(--board-inner-width) / var(--num-cols));
@@ -71,9 +73,12 @@ export default class MeatMatchGameBoard extends HTMLElement {
           display: grid;
           grid-template-rows: repeat(var(--num-rows), var(--meat-size));
           grid-template-columns: repeat(var(--num-cols), var(--meat-size));
+          gap: 4px;
         }
         .block {
           cursor: pointer;
+          background-color:#fde68a;
+          border-radius: 1px;
         }
         .block img {
           width: 100%;
@@ -81,10 +86,40 @@ export default class MeatMatchGameBoard extends HTMLElement {
           object-fit: cover;
           pointer-events: none;
         }
+
+        .score {
+          width: 20%;
+          display: flex;
+          align-items: center;
+
+          background-color:rgba(0,0,0,0.5);
+          padding: 5px;
+
+          border: 4px solid var(--color-score-border);
+          border-radius: 8px;
+
+          color: #fff;
+          margin-bottom: 5px;
+          font-weight: 700;
+
+          cursor: pointer;
+
+          span {
+            margin-left: 10px;
+          }
+
+          svg {
+            stroke: var(--color-score-border);
+          }
+        }
       </style>`;
 
     const html = `
       ${style}
+      <div class="score"> 
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart text-red-500"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+        <span>Score: ${this.score}</span>
+      </div>
       <div class="board">
         ${this.board
           .map((row, rowIndex) =>
@@ -250,6 +285,7 @@ export default class MeatMatchGameBoard extends HTMLElement {
         for (let col = 0; col < this.numCols; col++) {
           if (matched[row][col]) {
             this.board[row][col] = '';
+            this.score += 1;
           }
         }
       }
