@@ -79,7 +79,7 @@ export default class MeatMatchGameBoard extends HTMLElement {
           --meat-size: calc(var(--board-inner-width) / var(--num-cols));
 
            @media (max-width: 640px) {
-            --board-width: calc(100vw - 10px); 
+            --board-width: calc(100vw - 50px); 
           }
 
           padding: var(--padding);
